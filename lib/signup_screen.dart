@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -26,7 +27,17 @@ class _SignupScreenState extends State<SignupScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      await credential.user?.updateDisplayName(_nameController.text.trim());
+      final name = _nameController.text.trim();
+      await credential.user?.updateDisplayName(name);
+
+      await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
+        'uid': credential.user!.uid,
+        'name': name,
+        'email': _emailController.text.trim(),
+        'photoUrl': '',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
