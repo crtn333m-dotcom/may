@@ -35,14 +35,15 @@ class HomeScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('chats')
             .where('participants', arrayContains: currentUid)
-            .orderBy('lastTimestamp', descending: true)
-            .snapshots(),
+            .snapshots(),  // ← حذفنا orderBy هنا
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final chats = snapshot.data!.docs;
-          if (chats.isEmpty) {
+          if (snapshot.hasError) {
+            return Center(child: Text('خطأ: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text(
                 'مرحباً ${user?.displayName ?? user?.email ?? ""}\nلا توجد محادثات بعد',
@@ -51,6 +52,19 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           }
+
+          // نرتب يدوياً بدل orderBy
+          final chats = snapshot.data!.docs.toList()
+            ..sort((a, b) {
+              final aData = a.data() as Map<String, dynamic>;
+              final bData = b.data() as Map<String, dynamic>;
+              final aTime = aData['lastTimestamp'] as Timestamp?;
+              final bTime = bData['lastTimestamp'] as Timestamp?;
+              if (aTime == null) return 1;
+              if (bTime == null) return -1;
+              return bTime.compareTo(aTime);
+            });
+
           return ListView.builder(
             itemCount: chats.length,
             itemBuilder: (context, index) {
@@ -59,11 +73,15 @@ class HomeScreen extends StatelessWidget {
               final otherUid = participants.firstWhere((id) => id != currentUid);
 
               return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('users').doc(otherUid).get(),
+                future: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(otherUid)
+                    .get(),
                 builder: (context, userSnapshot) {
                   String otherName = '...';
                   if (userSnapshot.hasData && userSnapshot.data!.exists) {
-                    final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                    final userData =
+                        userSnapshot.data!.data() as Map<String, dynamic>;
                     otherName = userData['name'] ?? 'بدون اسم';
                   }
                   return ListTile(
