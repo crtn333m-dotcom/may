@@ -28,6 +28,11 @@ jobs:
           rm -rf android
           flutter create . --platforms=android --org com.example --project-name haway_app
 
+      - name: Set minSdkVersion
+        run: |
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' android/app/build.gradle
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle
+
       - name: Write local.properties
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
