@@ -69,6 +69,10 @@ jobs:
 
           echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
 
+      - name: Update Gradle wrapper version
+        run: |
+          sed -i 's/distributionUrl=.*/distributionUrl=https\\:\/\/services.gradle.org\/distributions\/gradle-8.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
+
       - name: Install dependencies
         run: flutter pub get
 
